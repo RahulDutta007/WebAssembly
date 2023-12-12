@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Hello, Web Assembly</title>
+    </head>
+
+    <body>
+        <script src="wrapping.js"></script>
+        <button onclick="run_wasm()">Trigger</button>
+        <script>
+            const addNums = Module.cwrap(
+                "addNums",
+                "number",
+                ["number", "number"]
+            )
+            function run_wasm() {
+                var result = addNums(2,9)
+                console.log(result);
+            }
+        </script>
+    </body>
+</html>

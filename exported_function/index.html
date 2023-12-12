@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Hello, Web Assembly</title>
+    </head>
+
+    <body>
+        <button onclick="runWasm()">Trigger</button>
+        <button onclick="getString()">Copy String</button>
+        <script>
+            let memory = new WebAssembly.Memory({
+                initial: 256,
+                maximum: 512
+            });
+            let exports;
+            WebAssembly.instantiateStreaming(fetch("exported.out.wasm"), {
+                js: {
+                    memory
+                },
+                env: {
+                    emscripten_resize_heap: function(delta) {
+                        memory.grow(delta);
+                    },
+                    currTime: () => 100,
+                    logProgress: (proportion) => {
+                        console.log(proportion * 100);
+                    }
+                },
+
+            }).then((results) => {
+                exports = results.instance.exports;
+                memory = results.instance.exports.memory;
+            });
+            
+            function runWasm () {
+                const arr = [0, 2, 4, 16, 18, 20];
+                const ptr = encodeArray(arr, arr.length, 4);
+                const sum = exports.accumulate(ptr, 10);
+                exports.wasm_free(ptr);
+                console.log("Sum", sum);
+            }
+
+            function getString() {
+                const str = decodeString(exports.rand_string(40));
+                console.log(str);
+            }
+
+            function decodeArray(ptr, len) {
+                return new Uint8Array(memory.buffer).slice(ptr, ptr + len);
+            }
+
+            function decodeString(ptr, len) {
+                return new TextDecoder("utf-8").decode(decodeArray(ptr, len));
+            }
+
+            function decodeString(ptr) {
+                const bytes = new Uint8Array(memory.buffer, ptr);
+                let strLen = 0;
+                while(bytes[strLen] !== 0) {
+                    strLen++;
+                }
+                return new TextDecoder("utf-8").decode(bytes.slice(0, strLen));
+            }
+
+            function encodeArray(arr, len, sizeof = 1) {
+                let ptr, out;
+                if(sizeof === 8) {
+                    ptr = exports.wasm_malloc(len * 8);
+                    out = new BigUint64Array(memory.buffer, ptr);
+                } else if(sizeof === 4) {
+                    ptr = exports.wasm_malloc(len * 4);
+                    out = new Uint32Array(memory.buffer, ptr);
+                } else {
+                    ptr = exports.wasm_malloc(len);
+                    out = new Uint8Array(memory.buffer, ptr);
+                }
+
+                for(let idx = 0; idx < len; idx++) {
+                    out[i] = arr[i];
+                }
+                return ptr;
+            }
+        </script>
+    </body>
+</html>

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Hello, Web Assembly</title>
+    </head>
+    <body>
+        <button onclick="runWasm()">Trigger</button>
+        <script>
+            let memory = new WebAssembly.Memory({
+                initial: 256,
+                maximum: 512
+            });
+            let exports;
+            WebAssembly.instantiateStreaming(fetch("num_struct.out.wasm"), {
+                js: {
+                    memory
+                },
+                env: {
+                    emscripten_resize_heap: function(delta) {
+                        memory.grow(delta);
+                    }
+                },
+            }).then((results) => {
+                exports = results.instance.exports;
+                memory = results.instance.exports.memory;
+            });
+            
+            function runWasm () {
+                const ptr = exports.wasm_malloc(12);
+                let buf = new Uint32Array(memory.buffer, ptr, 2);
+                buf[0] = 2;
+                buf[1] = 3;
+
+                buf = new Float32Array(memory.buffer, ptr, 3);
+                buf[2] = 10.4;
+
+                const sum = exports.compute_sum(ptr);
+                console.log(sum);
+            }
+        </script>
+    </body>
+</html>

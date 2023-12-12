@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Hello, Web Assembly</title>
+    </head>
+
+    <body>
+        <button onclick="runWasm()">Trigger</button>
+        <button onclick="getString()">Copy String</button>
+        <script>
+            let memory = new WebAssembly.Memory({
+                initial: 256,
+                maximum: 512
+            });
+            let exports;
+            WebAssembly.instantiateStreaming(fetch("memory.out.wasm"), {
+                js: {
+                    memory
+                }
+            }).then((results) => {
+                exports = results.instance.exports;
+                memory = results.instance.exports.memory;
+            });
+            
+            function runWasm () {
+                console.log(memory.buffer)
+                const arr = new Uint32Array(memory.buffer);
+                for(let i = 0; i < 10; i++) {
+                    arr[i] = i * 2;
+                }
+                const sum = exports.accumulate(0, 10);
+                console.log("Sum", sum);
+            }
+
+            function getString() {
+                const ptr = exports.get_string();
+                const bytes = new Uint8Array(memory.buffer, ptr);
+                let strLen = 0;
+                while(bytes[strLen] !== 0) {
+                    strLen++;
+                }
+                const str = new TextDecoder("utf-8").decode(bytes.slice(0, strLen));
+                
+                console.log(str);
+            }
+        </script>
+    </body>
+</html>

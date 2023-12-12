@@ -1,0 +1,8 @@
+PERFORMANCE BENCHMARKING
+
+For Loop <= 2000000000,
+JS runs way faster than wasm,
+
+However, for 20000000000, wasm gives output but not js
+
+=======================

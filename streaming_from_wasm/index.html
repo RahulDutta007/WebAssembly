@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Hello, Web Assembly</title>
+    </head>
+
+    <body>
+        <script src="wrapping.js"></script>
+        <button onclick="run_wasm()">Trigger</button>
+        <script>
+            (async () => {
+                console.time("Start wasm");
+                const results = await WebAssembly.instantiateStreaming(fetch("foo.wasm"), {});
+                const { sum_of_numbers, loop } = results.instance.exports;
+                console.log(sum_of_numbers(20));
+                console.timeEnd("Start wasm");
+
+                console.time("Start js");
+                const sumOfNumbers = (n) => {
+                    return n * (n + 1) / 2;
+                }
+                console.log(sumOfNumbers(20));
+                console.timeEnd("Start js");
+
+                console.time("wasm loop");
+                loop(2000000000);
+                console.timeEnd("wasm loop");
+
+                console.time("js loop")
+                const jsLoop = (n) => {
+                    let i = 0;
+                    while(i < n) {
+                        i++;
+                    }
+                }
+                jsLoop(2000000000);
+                console.timeEnd("js loop");
+
+            })();
+        </script>
+    </body>
+</html>
